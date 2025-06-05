@@ -7,21 +7,25 @@ using namespace std;
 
 GameVision::GameVision()
     :
-    // **** ROOD ****
-    hLowRed1_(170), hHighRed1_(180),
-    hLowRed2_(0), hHighRed2_(10),
-    sLowRed_(140), sHighRed_(255),
-    vLowRed_(80), vHighRed_(255),
+    // **** ROOD/ROZE ****
+    hLowRed1_(170),
+    hHighRed1_(180),
+    hLowRed2_(0),
+    hHighRed2_(10),
+    sLowRed_(140),
+    vLowRed_(80),
 
     // **** GROEN ****
-    hLowGreen_(35), hHighGreen_(60),
-    sLowGreen_(33), sHighGreen_(255),
-    vLowGreen_(80), vHighGreen_(255),
+    hLowGreen_(35),
+    hHighGreen_(60),
+    sLowGreen_(33),
+    vLowGreen_(80),
 
     // **** BORD (goud/oranje) ****
-    hLowBoard_(10), hHighBoard_(45),
-    sLowBoard_(145), sHighBoard_(255),
-    vLowBoard_(90), vHighBoard_(255),
+    hLowBoard_(10),
+    hHighBoard_(45),
+    sLowBoard_(145),
+    vLowBoard_(90),
 
     warpSize_(700, 600)
 {
@@ -30,49 +34,34 @@ GameVision::GameVision()
 }
 
 void GameVision::initDefaultHSV() {
-    // Beginwaarden zijn al toegewezen via initializer-list
+    // Beginwaarden al in initializer-list
 }
 
 void GameVision::createHSVTrackbars() {
     const String winName = "HSV Kalibratie";
-    namedWindow(winName, WINDOW_AUTOSIZE);
+    // Maak venster resizable
+    namedWindow(winName, WINDOW_NORMAL);
 
-    // ----- BORD (goud/oranje) -----
-    createTrackbar("hLowBoard", winName, &hLowBoard_, 179);
-    createTrackbar("hHighBoard", winName, &hHighBoard_, 179);
-    createTrackbar("sLowBoard", winName, &sLowBoard_, 255);
-    createTrackbar("sHighBoard", winName, &sHighBoard_, 255);
-    createTrackbar("vLowBoard", winName, &vLowBoard_, 255);
-    createTrackbar("vHighBoard", winName, &vHighBoard_, 255);
 
-    // ----- ROOD (2 hue-ranges) -----
-    createTrackbar("hLowRed1", winName, &hLowRed1_, 179);
-    createTrackbar("hHighRed1", winName, &hHighRed1_, 179);
-    createTrackbar("hLowRed2", winName, &hLowRed2_, 179);
-    createTrackbar("hHighRed2", winName, &hHighRed2_, 179);
-    createTrackbar("sLowRed", winName, &sLowRed_, 255);
-    createTrackbar("sHighRed", winName, &sHighRed_, 255);
-    createTrackbar("vLowRed", winName, &vLowRed_, 255);
-    createTrackbar("vHighRed", winName, &vHighRed_, 255);
+    // -- BORD (goud/oranje) --
+    createTrackbar("Board Hue Low", winName, &hLowBoard_, 179);
+    createTrackbar("Board Hue High", winName, &hHighBoard_, 179);
+    createTrackbar("Board Sat Low", winName, &sLowBoard_, 255);
+    createTrackbar("Board Val Low", winName, &vLowBoard_, 255);
 
-    // ----- GROEN -----
-    createTrackbar("hLowGreen", winName, &hLowGreen_, 179);
-    createTrackbar("hHighGreen", winName, &hHighGreen_, 179);
-    createTrackbar("sLowGreen", winName, &sLowGreen_, 255);
-    createTrackbar("sHighGreen", winName, &sHighGreen_, 255);
-    createTrackbar("vLowGreen", winName, &vLowGreen_, 255);
-    createTrackbar("vHighGreen", winName, &vHighGreen_, 255);
-}
+    // -- ROOD/ROZE (2 hue‐ranges) --
+    createTrackbar("Red Hue1 Low", winName, &hLowRed1_, 179);
+    createTrackbar("Red Hue1 High", winName, &hHighRed1_, 179);
+    createTrackbar("Red Hue2 Low", winName, &hLowRed2_, 179);
+    createTrackbar("Red Hue2 High", winName, &hHighRed2_, 179);
+    createTrackbar("Red Sat Low", winName, &sLowRed_, 255);
+    createTrackbar("Red Val Low", winName, &vLowRed_, 255);
 
-void GameVision::calibrateHSV() {
-    Mat dummy(1, 1, CV_8UC3, Scalar(0, 0, 0));
-    while (true) {
-        imshow("HSV Kalibratie", dummy);
-        if (waitKey(30) == 'q') {
-            destroyWindow("HSV Kalibratie");
-            break;
-        }
-    }
+    // -- GROEN --
+    createTrackbar("Green Hue Low", winName, &hLowGreen_, 179);
+    createTrackbar("Green Hue High", winName, &hHighGreen_, 179);
+    createTrackbar("Green Sat Low", winName, &sLowGreen_, 255);
+    createTrackbar("Green Val Low", winName, &vLowGreen_, 255);
 }
 
 bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
@@ -80,11 +69,11 @@ bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
     cvtColor(frame, hsv, COLOR_BGR2HSV);
     GaussianBlur(hsv, hsvBlur, Size(5, 5), 2);
 
-    // 1. Kleursegmentatie voor het bord (goud/oranje)
+    // 1. Kleursegmentatie voor het bord
     Mat mask;
     inRange(hsvBlur,
         Scalar(hLowBoard_, sLowBoard_, vLowBoard_),
-        Scalar(hHighBoard_, sHighBoard_, vHighBoard_),
+        Scalar(hHighBoard_, 255, 255),
         mask);
 
     // 2. Morfologische bewerkingen om ruis/gaten te dichten
@@ -92,7 +81,6 @@ bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
     morphologyEx(mask, mask, MORPH_CLOSE, kernel, Point(-1, -1), 3);
     morphologyEx(mask, mask, MORPH_OPEN, kernel, Point(-1, -1), 1);
 
-    // Toon mask voor kalibratie
     imshow("Board Mask", mask);
 
     // 3. Contouren zoeken
@@ -100,13 +88,13 @@ bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
     findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
     if (contours.empty()) return false;
 
-    // 4. Sorteer contouren op grootte (aflopend)
+    // 4. Sorteer contouren op grootte
     sort(contours.begin(), contours.end(),
         [](const vector<Point>& a, const vector<Point>& b) {
             return contourArea(a) > contourArea(b);
         });
 
-    // 5. Loop over contouren om vierhoek te vinden
+    // 5. Zoek vierhoek
     for (const auto& c : contours) {
         double area = contourArea(c);
         if (area < 12000) continue;
@@ -114,13 +102,11 @@ bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
         vector<Point> approx;
         approxPolyDP(c, approx, arcLength(c, true) * 0.015, true);
         if (approx.size() == 4) {
-            // Sorteer en ordeneer hoeken
             sort(approx.begin(), approx.end(),
                 [](const Point& p1, const Point& p2) {
                     return (p1.y < p2.y) || (p1.y == p2.y && p1.x < p2.x);
                 });
             vector<Point2f> corners(4);
-            // Bovenste twee
             if (approx[0].x < approx[1].x) {
                 corners[0] = approx[0];
                 corners[1] = approx[1];
@@ -129,7 +115,6 @@ bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
                 corners[0] = approx[1];
                 corners[1] = approx[0];
             }
-            // Onderste twee
             if (approx[2].x < approx[3].x) {
                 corners[2] = approx[2];
                 corners[3] = approx[3];
@@ -139,7 +124,6 @@ bool GameVision::detectAndWarpBoard(const Mat& frame, Mat& warped) {
                 corners[3] = approx[2];
             }
 
-            // 6. Bereken perspective transform naar 700×600 rechthoek
             vector<Point2f> dstCorners = {
                 Point2f(0,   0),
                 Point2f(699, 0),
@@ -174,6 +158,7 @@ void GameVision::detectDiscs(const Mat& warped, Board& board) {
                 continue;
             }
             Mat cellHSV = hsvWarp(roiRect);
+
             int value = classifyColor(cellHSV);
             board[i][j] = value;
 
@@ -187,30 +172,28 @@ void GameVision::detectDiscs(const Mat& warped, Board& board) {
 
 int GameVision::classifyColor(const Mat& roiHSV) {
     Mat maskRed1, maskRed2, maskRed, maskGreen;
-    // --- ROOD (2 hue-ranges) ---
     inRange(roiHSV,
         Scalar(hLowRed1_, sLowRed_, vLowRed_),
-        Scalar(hHighRed1_, sHighRed_, vHighRed_),
+        Scalar(hHighRed1_, 255, 255),
         maskRed1);
     inRange(roiHSV,
         Scalar(hLowRed2_, sLowRed_, vLowRed_),
-        Scalar(hHighRed2_, sHighRed_, vHighRed_),
+        Scalar(hHighRed2_, 255, 255),
         maskRed2);
     bitwise_or(maskRed1, maskRed2, maskRed);
 
-    // --- GROEN ---
     inRange(roiHSV,
         Scalar(hLowGreen_, sLowGreen_, vLowGreen_),
-        Scalar(hHighGreen_, sHighGreen_, vHighGreen_),
+        Scalar(hHighGreen_, 255, 255),
         maskGreen);
 
     double totalPixels = roiHSV.rows * roiHSV.cols;
     double countRed = countNonZero(maskRed);
     double countGreen = countNonZero(maskGreen);
 
-    if (countRed / totalPixels > 0.2)  return 2; // rood/roze → waarde 2
-    if (countGreen / totalPixels > 0.2) return 1; // groen → waarde 1
-    return 0; // leeg
+    if (countRed / totalPixels > 0.2)  return 2;
+    if (countGreen / totalPixels > 0.2) return 1;
+    return 0;
 }
 
 bool GameVision::boardsDiffer(const Board& a, const Board& b) {
@@ -230,8 +213,6 @@ void GameVision::printBoard(const Board& board) {
     cout << endl;
 }
 
-void GameVision::showDebugWindows(const Mat& warped, const Mat& maskRed, const Mat& maskColor) {
-    imshow("Warped Board", warped);
-    imshow("Mask Rood", maskRed);
-    imshow("Mask Color", maskColor);
+void GameVision::showDebugWindows(const Mat&, const Mat&, const Mat&) {
+    // (optioneel: extra debugvensters)
 }
