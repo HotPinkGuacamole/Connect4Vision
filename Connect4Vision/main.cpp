@@ -1,13 +1,17 @@
 ﻿// main.cpp
 
 #include "GameVision.h"
+#include <opencv2/opencv.hpp>   // Nodig voor VideoCapture, imshow, waitKey, etc.
+
+using namespace cv;
+using namespace std;
 
 int main() {
-    // Kies de camera-index (0 = eerste camera, 1 = tweede, etc.)
+    // Kies de camera-index (0 = laptop camera, 1 = usb webcam)
     int cameraIndex = 1;
-    cv::VideoCapture cap(cameraIndex);
+    VideoCapture cap(cameraIndex);
     if (!cap.isOpened()) {
-        std::cerr << "Fout: kon camera met index " << cameraIndex << " niet openen!\n";
+        cerr << "Fout: kon camera niet openen!\n";
         return -1;
     }
 
@@ -15,7 +19,7 @@ int main() {
     Board board{}, prevBoard{};
     bool firstFrame = true;
 
-    cv::Mat frame, warped;
+    Mat frame, warped;
     while (true) {
         cap >> frame;
         if (frame.empty()) continue;
@@ -40,10 +44,10 @@ int main() {
         // Toon het originele frame altijd
         imshow("Connect4", frame);
 
-        if (cv::waitKey(1) == 'q') break;
+        if (waitKey(1) == 'q') break;
     }
 
     cap.release();
-    cv::destroyAllWindows();
+    destroyAllWindows();
     return 0;
 }
