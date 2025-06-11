@@ -1,53 +1,34 @@
-﻿// main.cpp
-
-#include "GameVision.h"
-#include <opencv2/opencv.hpp>   // Nodig voor VideoCapture, imshow, waitKey, etc.
-
-using namespace cv;
-using namespace std;
+﻿#include "GameVision.h"
 
 int main() {
-    // Kies de camera-index (0 = laptop camera, 1 = usb webcam)
-    int cameraIndex = 1;
-    VideoCapture cap(cameraIndex);
-    if (!cap.isOpened()) {
-        cerr << "Fout: kon camera niet openen!\n";
+    VideoCapture camera(1);
+    if (!camera.isOpened()) {
+        cerr << "Camera niet bereikbaar\n";
         return -1;
     }
 
     GameVision gv;
-    Board board{}, prevBoard{};
-    bool firstFrame = true;
+    gv.createSliderWindow();
 
+    Board prevBoard{}, currBoard{};
     Mat frame, warped;
-    while (true) {
-        cap >> frame;
-        if (frame.empty()) continue;
 
-        // Vind en warp het bord
-        bool found = gv.detectAndWarpBoard(frame, warped);
-        if (found) {
-            // Detecteer fiches in het gewarpte bord
-            gv.detectDiscs(warped, board);
+    while (waitKey(1) != 'q') {
+        if (!camera.read(frame))
+            continue;
 
-            if (firstFrame || GameVision::boardsDiffer(board, prevBoard)) {
-                GameVision::printBoard(board);
-                prevBoard = board;
-                firstFrame = false;
+        warped = frame.clone();
+
+        if (gv.detectAndWarpBoard(frame, warped)) {
+            gv.detectDiscs(warped, currBoard);
+            if (GameVision::boardsDiffer(currBoard, prevBoard)) {
+                GameVision::printBoard(currBoard);
+                prevBoard = currBoard;
             }
-            imshow("Gewarpte Connect4", warped);
-        }
-        else {
-            imshow("Gewarpte Connect4", frame);
         }
 
-        // Toon het originele frame altijd
-        imshow("Connect4", frame);
-
-        if (waitKey(1) == 'q') break;
+        imshow("Vervormd", warped);
+        imshow("Origineel", frame);
     }
-
-    cap.release();
-    destroyAllWindows();
     return 0;
 }

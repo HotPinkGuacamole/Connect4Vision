@@ -1,49 +1,51 @@
-﻿// GameVision.h
-
-#ifndef GAME_VISION_H
-#define GAME_VISION_H
+﻿#ifndef GAMEVISION_H
+#define GAMEVISION_H
 
 #include <opencv2/opencv.hpp>
 #include <array>
 #include <vector>
 #include <iostream>
+#include <chrono>
+
+using namespace cv;
+using namespace std;
+using namespace std::chrono;
 
 constexpr int ROWS = 6;
 constexpr int COLS = 7;
-using Board = std::array<std::array<int, COLS>, ROWS>;
+using Board = array<array<int, COLS>, ROWS>;
 
 class GameVision {
 public:
-    GameVision();
-    void calibrateHSV();
-    bool detectAndWarpBoard(const cv::Mat& frame, cv::Mat& warped);
-    void detectDiscs(const cv::Mat& warped, Board& board);
+    GameVision(int cameraIndex = 0);
+    ~GameVision() noexcept;
+
+    bool detectAndWarpBoard(const Mat& frame, Mat& warped);
+    void detectDiscs(const Mat& warped, Board& board);
+
+    void updateBoard(const Board& board);
+    bool tick();
+    Board getState() const;
+
     static bool boardsDiffer(const Board& a, const Board& b);
     static void printBoard(const Board& board);
 
+    void createSliderWindow();
+
 private:
-    // ROOD/ROZE (2 hue-ranges)
-    int hLowRed1_, hHighRed1_;
-    int hLowRed2_, hHighRed2_;
-    int sLowRed_;
-    int vLowRed_;
+    int classifyColor(const Mat& roiHSV);
 
-    // GROEN
-    int hLowGreen_, hHighGreen_;
-    int sLowGreen_;
-    int vLowGreen_;
+    VideoCapture cap_;
+    Mat           perspectiveM_;
+    Size          warpSize_{ 700,600 };
 
-    // BORD (goud/oranje)
-    int hLowBoard_, hHighBoard_;
-    int sLowBoard_;
-    int vLowBoard_;
+    Board oldBoard_{}, newBoard_{};
+    steady_clock::time_point changeStart_;
+    bool firstTick_{ true };
 
-    cv::Mat perspectiveM_;
-    cv::Size warpSize_;
-
-    void initDefaultHSV();
-    void createHSVTrackbars();
-    int classifyColor(const cv::Mat& roiHSV);
+    int hLowRed1_, hHighRed1_, hLowRed2_, hHighRed2_, sLowRed_, vLowRed_;
+    int hLowBlue_, hHighBlue_, sLowBlue_, vLowBlue_;
+    int hLowBoard_, hHighBoard_, sLowBoard_, vLowBoard_;
 };
 
-#endif // GAME_VISION_H
+#endif // GAMEVISION_H
